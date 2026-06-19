@@ -1,0 +1,925 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>詐欺メッセージ危険度チェック</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #667085;
+      --line: #d9e0e8;
+      --paper: #fbfcfd;
+      --panel: #ffffff;
+      --accent: #a33a2a;
+      --accent-strong: #812d20;
+      --safe: #176f5d;
+      --warn: #8a5319;
+      --soft: #fbefed;
+      --cool: #eef6f7;
+      --shadow: 0 18px 50px rgba(32, 33, 36, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(163, 58, 42, 0.08), rgba(31, 111, 103, 0.08)),
+        var(--paper);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.7rem, 3vw, 2.55rem);
+      line-height: 1.1;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      max-width: 780px;
+      line-height: 1.65;
+    }
+
+    .status {
+      display: grid;
+      gap: 4px;
+      min-width: 188px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.82);
+    }
+
+    .status span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .status strong {
+      font-size: 1.55rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(310px, 0.92fr) minmax(360px, 1.08fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 252, 253, 0.9);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .panel-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .form,
+    .output-wrap {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      color: #344054;
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 188px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(163, 58, 42, 0.55);
+      box-shadow: 0 0 0 3px rgba(163, 58, 42, 0.12);
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .check {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      min-height: 42px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: #344054;
+      font-size: 0.9rem;
+      font-weight: 650;
+      line-height: 1.35;
+    }
+
+    .check input {
+      width: auto;
+      margin-top: 2px;
+      accent-color: var(--accent);
+    }
+
+    .actions,
+    .samples,
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:hover {
+      border-color: rgba(163, 58, 42, 0.42);
+    }
+
+    .primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .sample,
+    .tab.active {
+      border-color: #edc7c0;
+      background: var(--soft);
+      color: var(--accent-strong);
+    }
+
+    .tab {
+      padding: 8px 10px;
+      font-size: 0.88rem;
+    }
+
+    .score-card {
+      display: grid;
+      gap: 12px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .score-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      width: fit-content;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--safe);
+      background: #eaf7f1;
+      font-weight: 900;
+      font-size: 0.9rem;
+    }
+
+    .badge.caution {
+      color: var(--warn);
+      background: #fff4dd;
+    }
+
+    .badge.high,
+    .badge.danger {
+      color: var(--accent-strong);
+      background: var(--soft);
+    }
+
+    .score {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      line-height: 1;
+      font-weight: 900;
+    }
+
+    .bar {
+      overflow: hidden;
+      height: 12px;
+      border-radius: 999px;
+      background: #eef0f3;
+    }
+
+    .bar span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      background: var(--safe);
+      transition: width 0.2s ease;
+    }
+
+    .bar span.caution {
+      background: #d28a2e;
+    }
+
+    .bar span.high,
+    .bar span.danger {
+      background: var(--accent);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--cool);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.08rem;
+    }
+
+    .output {
+      min-height: 360px;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 16px;
+      line-height: 1.68;
+      font-size: 0.96rem;
+    }
+
+    .output.empty {
+      color: var(--muted);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      min-height: 34px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--accent-strong);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .links {
+      display: grid;
+      gap: 8px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .links a {
+      color: var(--accent-strong);
+      font-weight: 800;
+    }
+
+    .hint {
+      display: grid;
+      gap: 7px;
+      padding: 12px;
+      border: 1px solid #edc7c0;
+      border-radius: 8px;
+      background: var(--soft);
+      color: var(--accent-strong);
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .toast {
+      min-height: 22px;
+      color: var(--accent-strong);
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 900px) {
+      header,
+      .workspace,
+      .two {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        display: grid;
+        align-items: start;
+      }
+
+      .status {
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        width: min(100% - 22px, 1180px);
+        padding-top: 18px;
+      }
+
+      .checks,
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .score-top {
+        display: grid;
+      }
+
+      .output {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>詐欺メッセージ危険度チェック</h1>
+        <p class="lead">SMS、メール、DMの文章を貼り付けると、危険サインと次にやることを整理します。入力内容は外部に送信しません。</p>
+      </div>
+      <div class="status" aria-label="危険度">
+        <span>現在の危険度</span>
+        <strong id="riskLabel">未チェック</strong>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="詐欺メッセージ確認ツール">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>入力</h2>
+            <p>届いた文章をそのまま貼ってください。</p>
+          </div>
+        </div>
+
+        <div class="form">
+          <div class="row">
+            <label for="message">メッセージ本文</label>
+            <textarea id="message" placeholder="例: 【重要】未払い料金があります。本日中に下記URLから確認してください。"></textarea>
+          </div>
+
+          <div class="two">
+            <div class="row">
+              <label for="channel">届いた場所</label>
+              <select id="channel">
+                <option value="sms">SMS</option>
+                <option value="email">メール</option>
+                <option value="dm">SNS・チャット</option>
+                <option value="phone">電話の内容メモ</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div class="row">
+              <label for="sender">名乗っている相手</label>
+              <input id="sender" placeholder="例: 銀行、宅配会社、警察、通販サイト">
+            </div>
+          </div>
+
+          <div class="row">
+            <label>すでにしたこと</label>
+            <div class="checks">
+              <label class="check"><input type="checkbox" id="clicked">リンクを押した</label>
+              <label class="check"><input type="checkbox" id="enteredInfo">個人情報を入力した</label>
+              <label class="check"><input type="checkbox" id="paidMoney">お金を払った</label>
+              <label class="check"><input type="checkbox" id="familyConcern">家族にも確認したい</label>
+            </div>
+          </div>
+
+          <div class="row">
+            <label>サンプル</label>
+            <div class="samples">
+              <button class="sample" type="button" data-sample="delivery">宅配</button>
+              <button class="sample" type="button" data-sample="bank">銀行</button>
+              <button class="sample" type="button" data-sample="investment">投資</button>
+              <button class="sample" type="button" data-sample="support">サポート警告</button>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" type="button" id="checkBtn" title="危険度をチェックする">チェック</button>
+            <button type="button" id="clearBtn" title="入力を消す">クリア</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>結果</h2>
+            <p id="outputNote">危険サインを表示します。</p>
+          </div>
+          <div class="tabs" aria-label="出力切り替え">
+            <button class="tab active" type="button" data-mode="result">結果</button>
+            <button class="tab" type="button" data-mode="family">家族共有</button>
+            <button class="tab" type="button" data-mode="memo">確認メモ</button>
+          </div>
+        </div>
+
+        <div class="output-wrap">
+          <div class="score-card">
+            <div class="score-top">
+              <div>
+                <span class="badge" id="riskBadge">未チェック</span>
+                <p class="score" id="scoreText">0</p>
+              </div>
+              <div class="metrics">
+                <div class="metric"><span>検出サイン</span><strong id="hitMetric">0</strong></div>
+                <div class="metric"><span>URL</span><strong id="urlMetric">0</strong></div>
+                <div class="metric"><span>次の行動</span><strong id="actionMetric">未生成</strong></div>
+              </div>
+            </div>
+            <div class="bar" aria-label="危険度スコア"><span id="scoreBar"></span></div>
+            <div class="chips" id="chips" aria-label="検出された危険サイン"></div>
+          </div>
+
+          <div class="output empty" id="output">左側に入力して「チェック」を押してください。</div>
+
+          <div class="hint">
+            <strong>大事な前提</strong>
+            <span>このツールは詐欺を断定するものではありません。少しでも不安なら、リンクを押さず、公式アプリや公式サイトから確認してください。</span>
+          </div>
+
+          <div class="links">
+            <span>相談・確認先</span>
+            <a href="https://www.npa.go.jp/bureau/safetylife/sos47/case/" target="_blank" rel="noreferrer">警察庁 SOS47 特殊詐欺の手口と対策</a>
+            <a href="https://www.ipa.go.jp/security/10threats/10threats2026.html" target="_blank" rel="noreferrer">IPA 情報セキュリティ10大脅威 2026</a>
+            <span>電話相談: 警察相談専用窓口 #9110 / 消費者ホットライン 188</span>
+          </div>
+
+          <div class="actions">
+            <button type="button" id="copyBtn" title="表示中の文章をコピーする">コピー</button>
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const fields = {
+      message: document.querySelector("#message"),
+      channel: document.querySelector("#channel"),
+      sender: document.querySelector("#sender"),
+      clicked: document.querySelector("#clicked"),
+      enteredInfo: document.querySelector("#enteredInfo"),
+      paidMoney: document.querySelector("#paidMoney"),
+      familyConcern: document.querySelector("#familyConcern")
+    };
+
+    const output = document.querySelector("#output");
+    const outputNote = document.querySelector("#outputNote");
+    const toast = document.querySelector("#toast");
+    const riskLabel = document.querySelector("#riskLabel");
+    const riskBadge = document.querySelector("#riskBadge");
+    const scoreText = document.querySelector("#scoreText");
+    const scoreBar = document.querySelector("#scoreBar");
+    const hitMetric = document.querySelector("#hitMetric");
+    const urlMetric = document.querySelector("#urlMetric");
+    const actionMetric = document.querySelector("#actionMetric");
+    const chips = document.querySelector("#chips");
+
+    let currentMode = "result";
+    let generated = {};
+    let lastAnalysis = null;
+
+    const samples = {
+      delivery: {
+        channel: "sms",
+        sender: "宅配会社",
+        message: "【重要】お荷物をお届けできませんでした。保管期限は本日中です。下記URLから住所を再登録してください。http://example-delivery-login.com"
+      },
+      bank: {
+        channel: "sms",
+        sender: "銀行",
+        message: "口座の利用を一時停止しました。本人確認のため、暗証番号と認証コードを入力してください。至急ログイン: https://bank-security.example.net"
+      },
+      investment: {
+        channel: "dm",
+        sender: "投資アドバイザー",
+        message: "今だけ必ず利益が出る投資案件です。先生の指示通りに専用アプリを入れて、今日中に30万円を振り込めば特別枠に入れます。家族にはまだ言わないでください。"
+      },
+      support: {
+        channel: "other",
+        sender: "セキュリティサポート",
+        message: "警告: ウイルスに感染しています。この画面を閉じないでください。サポート番号に電話し、遠隔操作アプリをインストールしてください。修復費用を電子マネーで支払う必要があります。"
+      }
+    };
+
+    const rules = [
+      {
+        id: "urgency",
+        label: "急がせる表現",
+        weight: 16,
+        words: ["至急", "本日中", "今すぐ", "期限", "停止", "凍結", "緊急", "急ぎ", "保管期限", "この画面を閉じない"],
+        advice: "急がせる文章ほど、いったん止まって公式経路で確認する"
+      },
+      {
+        id: "money",
+        label: "金銭要求",
+        weight: 22,
+        words: ["未払い", "料金", "支払い", "振り込", "送金", "電子マネー", "ギフトカード", "修復費用", "罰金", "示談金", "30万円"],
+        advice: "振込や電子マネー購入を求められたら、支払う前に相談する"
+      },
+      {
+        id: "personal",
+        label: "個人情報・認証情報の要求",
+        weight: 24,
+        words: ["暗証番号", "認証コード", "ワンタイム", "パスワード", "本人確認", "口座番号", "カード番号", "住所を再登録", "個人情報"],
+        advice: "暗証番号や認証コードは入力しない。公式アプリから確認する"
+      },
+      {
+        id: "url",
+        label: "URL・リンク誘導",
+        weight: 18,
+        words: ["http://", "https://", "www.", ".com", ".net", ".xyz", "lin.ee", "bit.ly", "ログイン"],
+        advice: "メッセージ内リンクは押さず、ブックマークや公式アプリから開く"
+      },
+      {
+        id: "support",
+        label: "サポート詐欺の特徴",
+        weight: 24,
+        words: ["ウイルス", "感染", "警告", "サポート番号", "遠隔操作", "リモート", "修復", "インストール"],
+        advice: "偽警告は無視し、ブラウザを閉じる。電話や遠隔操作アプリは使わない"
+      },
+      {
+        id: "investment",
+        label: "投資詐欺の特徴",
+        weight: 22,
+        words: ["必ず利益", "投資", "特別枠", "先生", "資産運用", "暗号資産", "仮想通貨", "副業", "元本保証"],
+        advice: "SNSだけで投資を勧められたら、入金前に金融庁や警察相談へ"
+      },
+      {
+        id: "secrecy",
+        label: "秘密にさせる表現",
+        weight: 18,
+        words: ["誰にも言わない", "家族には", "秘密", "内緒", "口外しない"],
+        advice: "秘密にするよう言われたら、家族や公的窓口に相談する"
+      },
+      {
+        id: "authority",
+        label: "公的機関・金融機関を名乗る",
+        weight: 14,
+        words: ["警察", "銀行", "税務署", "市役所", "裁判", "金融庁", "宅配", "クレジット", "カード会社"],
+        advice: "名乗りだけで信用せず、公式番号に自分でかけ直す"
+      },
+      {
+        id: "romance",
+        label: "ロマンス詐欺の特徴",
+        weight: 18,
+        words: ["会いたい", "結婚", "恋人", "荷物を送る", "渡航費", "親近感", "愛して"],
+        advice: "SNSだけの関係でお金を求められたら、送金しない"
+      }
+    ];
+
+    function normalize(text) {
+      return text.toLowerCase();
+    }
+
+    function countUrls(text) {
+      const matches = text.match(/https?:\/\/\S+|www\.\S+|[a-z0-9-]+\.(com|net|jp|xyz|top|info)\S*/gi);
+      return matches ? matches.length : 0;
+    }
+
+    function findHits(text) {
+      const normalized = normalize(text);
+      return rules.map((rule) => {
+        const words = rule.words.filter((word) => normalized.includes(word.toLowerCase()));
+        return words.length ? { ...rule, words } : null;
+      }).filter(Boolean);
+    }
+
+    function analyze() {
+      const text = fields.message.value.trim();
+      const hits = findHits(text);
+      const urlCount = countUrls(text);
+      let score = hits.reduce((total, hit) => total + hit.weight + Math.min(hit.words.length - 1, 3) * 4, 0);
+      if (urlCount >= 2) score += 8;
+      if (fields.channel.value === "sms" && urlCount > 0) score += 8;
+      if (fields.clicked.checked) score += 14;
+      if (fields.enteredInfo.checked) score += 24;
+      if (fields.paidMoney.checked) score += 30;
+      if (!text) score = 0;
+      score = Math.min(score, 100);
+
+      let level = "low";
+      let label = "低め";
+      if (!text) {
+        level = "none";
+        label = "未チェック";
+      } else if (score >= 70 || fields.paidMoney.checked || fields.enteredInfo.checked) {
+        level = "danger";
+        label = "危険";
+      } else if (score >= 45) {
+        level = "high";
+        label = "高め";
+      } else if (score >= 20) {
+        level = "caution";
+        label = "注意";
+      }
+
+      return { text, hits, urlCount, score, level, label };
+    }
+
+    function mainActions(analysis) {
+      const actions = [];
+      if (!analysis.text) return ["文章を貼り付けてチェックする"];
+      actions.push("リンクを押さない。押した場合も追加操作を止める");
+      actions.push("メッセージ内の番号ではなく、公式アプリ・公式サイト・カード裏面などから確認する");
+      if (analysis.level === "danger" || analysis.level === "high") actions.push("家族、警察相談専用窓口 #9110、消費者ホットライン 188 に相談する");
+      if (fields.enteredInfo.checked) actions.push("入力したID・パスワード・カード情報の変更や停止を検討する");
+      if (fields.paidMoney.checked) actions.push("支払い記録を残し、すぐに警察や金融機関へ相談する");
+      if (fields.clicked.checked) actions.push("不審なアプリを入れていないか確認し、端末のセキュリティ確認をする");
+      if (analysis.hits.some((hit) => hit.id === "support")) actions.push("サポート番号に電話しない。遠隔操作アプリを入れない");
+      return [...new Set(actions)];
+    }
+
+    function buildResult(analysis) {
+      if (!analysis.text) return "左側に入力して「チェック」を押してください。";
+      const parts = [
+        `# 危険度: ${analysis.label}（${analysis.score}/100）`,
+        "",
+        "## 検出された危険サイン"
+      ];
+      if (analysis.hits.length) {
+        analysis.hits.forEach((hit) => {
+          parts.push(`- ${hit.label}: ${hit.words.join("、")}`);
+        });
+      } else {
+        parts.push("- 強い危険サインは見つかりませんでした。ただし安全と断定はできません。");
+      }
+      parts.push("", "## 今やること");
+      mainActions(analysis).forEach((action) => parts.push(`- ${action}`));
+      parts.push("", "## 見つけたリンク数", `- ${analysis.urlCount}件`);
+      parts.push("", "## 注意", "- この結果は断定ではありません。不安が残る場合は公式窓口へ相談してください。");
+      return parts.join("\n");
+    }
+
+    function buildFamilyText(analysis) {
+      if (!analysis.text) return "共有文はチェック後に生成されます。";
+      const sender = fields.sender.value.trim() || "送信者不明";
+      const action = analysis.level === "danger" || analysis.level === "high"
+        ? "リンクや支払いはせず、家族か相談窓口に確認してください。"
+        : "念のため、リンクは押さず公式アプリや公式サイトから確認してください。";
+      return `このメッセージは詐欺の可能性があるかもしれません。\n\n名乗っている相手: ${sender}\n危険度: ${analysis.label}（${analysis.score}/100）\n気になる点: ${analysis.hits.map((hit) => hit.label).join("、") || "強い危険サインは少なめ"}\n\n${action}\n警察相談専用窓口は #9110、消費者ホットラインは 188 です。`;
+    }
+
+    function buildMemo(analysis) {
+      if (!analysis.text) return "確認メモはチェック後に生成されます。";
+      const lines = [
+        "# 詐欺メッセージ確認メモ",
+        "",
+        `- 危険度: ${analysis.label}（${analysis.score}/100）`,
+        `- 届いた場所: ${fields.channel.options[fields.channel.selectedIndex].text}`,
+        `- 名乗っている相手: ${fields.sender.value.trim() || "未入力"}`,
+        `- URL数: ${analysis.urlCount}`,
+        `- リンクを押した: ${fields.clicked.checked ? "はい" : "いいえ"}`,
+        `- 個人情報を入力した: ${fields.enteredInfo.checked ? "はい" : "いいえ"}`,
+        `- お金を払った: ${fields.paidMoney.checked ? "はい" : "いいえ"}`,
+        "",
+        "## 検出サイン",
+        ...(analysis.hits.length ? analysis.hits.map((hit) => `- ${hit.label}: ${hit.words.join("、")}`) : ["- 目立つサインなし"]),
+        "",
+        "## 次に確認すること",
+        ...mainActions(analysis).map((action) => `- ${action}`),
+        "",
+        "## 元の文章",
+        analysis.text
+      ];
+      return lines.join("\n");
+    }
+
+    function renderChips(analysis) {
+      chips.innerHTML = "";
+      if (!analysis || !analysis.hits.length) {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = analysis && analysis.text ? "強い検出なし" : "未チェック";
+        chips.appendChild(chip);
+        return;
+      }
+      analysis.hits.forEach((hit) => {
+        const chip = document.createElement("span");
+        chip.className = "chip";
+        chip.textContent = hit.label;
+        chips.appendChild(chip);
+      });
+    }
+
+    function setRiskDisplay(analysis) {
+      const levelClass = analysis ? analysis.level : "none";
+      const label = analysis ? analysis.label : "未チェック";
+      const score = analysis ? analysis.score : 0;
+      riskLabel.textContent = label;
+      riskBadge.textContent = label;
+      riskBadge.className = `badge ${levelClass}`;
+      scoreText.textContent = String(score);
+      scoreBar.style.width = `${score}%`;
+      scoreBar.className = levelClass;
+      hitMetric.textContent = analysis ? String(analysis.hits.length) : "0";
+      urlMetric.textContent = analysis ? String(analysis.urlCount) : "0";
+      actionMetric.textContent = analysis && analysis.text ? "生成済み" : "未生成";
+      renderChips(analysis);
+    }
+
+    function renderMode() {
+      const text = generated[currentMode] || "左側に入力して「チェック」を押してください。";
+      output.textContent = text;
+      output.classList.toggle("empty", !generated[currentMode]);
+      outputNote.textContent = currentMode === "result" ? "危険サインを表示します。" : currentMode === "family" ? "家族に送る短文です。" : "相談時に使う確認メモです。";
+    }
+
+    function render() {
+      lastAnalysis = analyze();
+      generated = {
+        result: buildResult(lastAnalysis),
+        family: buildFamilyText(lastAnalysis),
+        memo: buildMemo(lastAnalysis)
+      };
+      setRiskDisplay(lastAnalysis);
+      renderMode();
+      toast.textContent = lastAnalysis.text ? "チェックしました。" : "メッセージを貼り付けてください。";
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const helper = document.createElement("textarea");
+      helper.value = text;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.left = "-9999px";
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand("copy");
+      document.body.removeChild(helper);
+    }
+
+    document.querySelector("#checkBtn").addEventListener("click", render);
+    document.querySelector("#clearBtn").addEventListener("click", () => {
+      fields.message.value = "";
+      fields.channel.value = "sms";
+      fields.sender.value = "";
+      fields.clicked.checked = false;
+      fields.enteredInfo.checked = false;
+      fields.paidMoney.checked = false;
+      fields.familyConcern.checked = false;
+      generated = {};
+      lastAnalysis = null;
+      setRiskDisplay(null);
+      renderMode();
+      toast.textContent = "";
+    });
+    document.querySelectorAll("[data-sample]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const sample = samples[button.dataset.sample];
+        fields.message.value = sample.message;
+        fields.channel.value = sample.channel;
+        fields.sender.value = sample.sender;
+        fields.clicked.checked = false;
+        fields.enteredInfo.checked = false;
+        fields.paidMoney.checked = false;
+        fields.familyConcern.checked = true;
+        render();
+      });
+    });
+    document.querySelector("#copyBtn").addEventListener("click", async () => {
+      const text = generated[currentMode] || "";
+      if (!text) {
+        toast.textContent = "コピーできる内容がまだありません。";
+        return;
+      }
+      try {
+        await copyText(text);
+        toast.textContent = "コピーしました。";
+      } catch (error) {
+        toast.textContent = "コピーできませんでした。手動で選択してください。";
+      }
+    });
+    document.querySelectorAll(".tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        currentMode = button.dataset.mode;
+        document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+        renderMode();
+      });
+    });
+
+    setRiskDisplay(null);
+  </script>
+</body>
+</html>
