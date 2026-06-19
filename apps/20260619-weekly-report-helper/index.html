@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Weekly Report Helper</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #667085;
+      --line: #d9e0e8;
+      --paper: #fbfcfd;
+      --panel: #ffffff;
+      --accent: #16736f;
+      --accent-strong: #0f5f5c;
+      --warn: #9a4d12;
+      --soft: #eef7f5;
+      --shadow: 0 18px 50px rgba(32, 33, 36, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(22, 115, 111, 0.08), rgba(218, 176, 73, 0.09)),
+        var(--paper);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.7rem, 3vw, 2.6rem);
+      line-height: 1.1;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.65;
+    }
+
+    .status {
+      display: grid;
+      gap: 4px;
+      min-width: 172px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .status span {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .status strong {
+      font-size: 1.35rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-height: 660px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(238, 247, 245, 0.65);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .panel-body {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      flex: 1;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 310px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      line-height: 1.65;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    textarea:focus,
+    select:focus,
+    input:focus {
+      outline: 3px solid rgba(22, 115, 111, 0.16);
+      border-color: var(--accent);
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+    select,
+    input {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: var(--ink);
+      background: #fff;
+      border-color: var(--line);
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #b6c4d3;
+    }
+
+    .primary {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .primary:hover {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+    }
+
+    .ghost {
+      background: transparent;
+    }
+
+    .sample {
+      color: var(--accent-strong);
+      background: var(--soft);
+      border-color: rgba(22, 115, 111, 0.2);
+    }
+
+    .output {
+      min-height: 452px;
+      white-space: pre-wrap;
+      overflow: auto;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      line-height: 1.7;
+      background: #fff;
+    }
+
+    .hint {
+      color: var(--muted);
+      line-height: 1.6;
+      font-size: 0.92rem;
+    }
+
+    .toast {
+      min-height: 22px;
+      color: var(--accent-strong);
+      font-size: 0.9rem;
+    }
+
+    .empty {
+      color: var(--muted);
+    }
+
+    .quality {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.76rem;
+      margin-bottom: 4px;
+    }
+
+    .metric strong {
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        width: min(100% - 20px, 680px);
+        padding-top: 18px;
+      }
+
+      header,
+      .workspace {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .status {
+        min-width: 0;
+      }
+
+      .panel {
+        min-height: auto;
+      }
+
+      .controls,
+      .quality {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>Weekly Report Helper</h1>
+        <p class="lead">今週の作業メモを貼り付けると、成果・進捗・課題・来週の予定に分けて週報に整えます。</p>
+      </div>
+      <div class="status" aria-live="polite">
+        <span>入力行数</span>
+        <strong id="lineCount">0</strong>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="週報作成ツール">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>作業メモ</h2>
+          <button class="sample" type="button" id="sampleBtn" title="サンプル入力を入れる">サンプル</button>
+        </div>
+        <div class="panel-body">
+          <textarea id="source" placeholder="- 新規LPの構成を作成&#10;- 問い合わせフォームの不具合を修正&#10;- 広告文のABテストを開始&#10;- 来週は公開後の数値を見る"></textarea>
+
+          <div class="controls">
+            <label>
+              文体
+              <select id="tone">
+                <option value="plain">簡潔</option>
+                <option value="polite">丁寧</option>
+                <option value="casual">やわらかめ</option>
+              </select>
+            </label>
+            <label>
+              出力形式
+              <select id="format">
+                <option value="markdown">Markdown</option>
+                <option value="plain">プレーンテキスト</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            補足メモ
+            <input id="note" placeholder="例: 来週は数字確認を重視">
+          </label>
+
+          <div class="actions">
+            <button class="primary" type="button" id="generateBtn" title="週報を生成する">生成</button>
+            <button class="ghost" type="button" id="clearBtn" title="入力を消す">クリア</button>
+          </div>
+          <p class="hint">入力内容は保存されません。ブラウザ内で整形するだけの小さな実験アプリです。</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>週報</h2>
+          <button type="button" id="copyBtn" title="週報をコピーする">コピー</button>
+        </div>
+        <div class="panel-body">
+          <div class="quality" aria-label="出力サマリー">
+            <div class="metric"><span>成果</span><strong id="doneCount">0</strong></div>
+            <div class="metric"><span>課題</span><strong id="issueCount">0</strong></div>
+            <div class="metric"><span>予定</span><strong id="nextCount">0</strong></div>
+          </div>
+          <div class="output empty" id="output">左側に作業メモを入れて「生成」を押してください。</div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const source = document.querySelector("#source");
+    const note = document.querySelector("#note");
+    const tone = document.querySelector("#tone");
+    const format = document.querySelector("#format");
+    const output = document.querySelector("#output");
+    const toast = document.querySelector("#toast");
+    const lineCount = document.querySelector("#lineCount");
+    const doneCount = document.querySelector("#doneCount");
+    const issueCount = document.querySelector("#issueCount");
+    const nextCount = document.querySelector("#nextCount");
+
+    const sample = [
+      "- 新規LPのワイヤーフレームを作成",
+      "- 問い合わせフォームの送信エラーを修正",
+      "- 広告文のABテストを開始",
+      "- ユーザー導線の数値確認がまだ途中",
+      "- 来週は公開後のCVRを見て改善案を出す"
+    ].join("\n");
+
+    function normalizeLine(line) {
+      return line
+        .replace(/^[\s\-*・]+/, "")
+        .replace(/^\d+[.)、]\s*/, "")
+        .trim();
+    }
+
+    function splitLines(text) {
+      return text
+        .split(/\r?\n/)
+        .map(normalizeLine)
+        .filter(Boolean);
+    }
+
+    function classify(lines) {
+      const result = {
+        done: [],
+        progress: [],
+        issues: [],
+        next: []
+      };
+
+      lines.forEach((line) => {
+        if (/来週|次週|次に|予定|TODO|todo|やる|進める|確認する/.test(line)) {
+          result.next.push(line);
+        } else if (/課題|未完|途中|遅れ|問題|懸念|ブロック|まだ|できていない/.test(line)) {
+          result.issues.push(line);
+        } else if (/開始|着手|進行|調整|確認中|検証中|レビュー中/.test(line)) {
+          result.progress.push(line);
+        } else {
+          result.done.push(line);
+        }
+      });
+
+      return result;
+    }
+
+    function phrase(item) {
+      if (tone.value === "polite") return `${item}しました。`;
+      if (tone.value === "casual") return `${item}しました`;
+      return item;
+    }
+
+    function bullet(items, fallback) {
+      if (!items.length) return [`- ${fallback}`];
+      return items.map((item) => `- ${phrase(item)}`);
+    }
+
+    function buildReport() {
+      const lines = splitLines(source.value);
+      const groups = classify(lines);
+      const extra = note.value.trim();
+      const markdown = format.value === "markdown";
+      const title = markdown ? "## 今週の週報" : "今週の週報";
+      const section = (name) => markdown ? `### ${name}` : name;
+
+      doneCount.textContent = groups.done.length + groups.progress.length;
+      issueCount.textContent = groups.issues.length;
+      nextCount.textContent = groups.next.length;
+
+      if (!lines.length) {
+        output.textContent = "左側に作業メモを入れて「生成」を押してください。";
+        output.classList.add("empty");
+        return;
+      }
+
+      const parts = [
+        title,
+        "",
+        section("成果"),
+        ...bullet(groups.done, "今週完了した内容は未入力です。"),
+        "",
+        section("進捗"),
+        ...bullet(groups.progress, "進行中の内容は未入力です。"),
+        "",
+        section("課題"),
+        ...bullet(groups.issues, "現時点で大きな課題はありません。"),
+        "",
+        section("来週の予定"),
+        ...bullet(groups.next, "来週の予定はこれから整理します。")
+      ];
+
+      if (extra) {
+        parts.push("", section("補足"), `- ${extra}`);
+      }
+
+      output.textContent = parts.join("\n");
+      output.classList.remove("empty");
+      toast.textContent = "週報を生成しました。";
+    }
+
+    function updateLineCount() {
+      lineCount.textContent = splitLines(source.value).length;
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+
+      const helper = document.createElement("textarea");
+      helper.value = text;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.left = "-9999px";
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand("copy");
+      document.body.removeChild(helper);
+    }
+
+    document.querySelector("#generateBtn").addEventListener("click", buildReport);
+    document.querySelector("#sampleBtn").addEventListener("click", () => {
+      source.value = sample;
+      note.value = "数字を見て、改善する画面を1つに絞る。";
+      updateLineCount();
+      buildReport();
+    });
+    document.querySelector("#clearBtn").addEventListener("click", () => {
+      source.value = "";
+      note.value = "";
+      output.textContent = "左側に作業メモを入れて「生成」を押してください。";
+      output.classList.add("empty");
+      toast.textContent = "";
+      doneCount.textContent = "0";
+      issueCount.textContent = "0";
+      nextCount.textContent = "0";
+      updateLineCount();
+    });
+    document.querySelector("#copyBtn").addEventListener("click", async () => {
+      const text = output.textContent.trim();
+      if (!text || output.classList.contains("empty")) {
+        toast.textContent = "コピーできる週報がまだありません。";
+        return;
+      }
+      try {
+        await copyText(text);
+        toast.textContent = "コピーしました。";
+      } catch (error) {
+        toast.textContent = "コピーできませんでした。手動で選択してください。";
+      }
+    });
+
+    source.addEventListener("input", updateLineCount);
+    updateLineCount();
+  </script>
+</body>
+</html>
