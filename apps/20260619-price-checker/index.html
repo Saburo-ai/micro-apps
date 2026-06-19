@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>原価ざっくり計算ツール</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #667085;
+      --line: #d9e0e8;
+      --paper: #fbfcfd;
+      --panel: #ffffff;
+      --accent: #176f5d;
+      --accent-strong: #10594b;
+      --soft: #eef7f3;
+      --warm: #f7efe0;
+      --warn: #8a5319;
+      --danger: #a33a2a;
+      --shadow: 0 18px 50px rgba(32, 33, 36, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(23, 111, 93, 0.08), rgba(211, 158, 60, 0.11)),
+        var(--paper);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.7rem, 3vw, 2.55rem);
+      line-height: 1.1;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      max-width: 780px;
+      line-height: 1.65;
+    }
+
+    .status {
+      display: grid;
+      gap: 4px;
+      min-width: 188px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .status span {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .status strong {
+      font-size: 1.35rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-height: 720px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(238, 247, 243, 0.74);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .panel-body {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.35;
+    }
+
+    input,
+    select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 12px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    input:focus,
+    select:focus {
+      outline: 3px solid rgba(23, 111, 93, 0.16);
+      border-color: var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: var(--ink);
+      background: #fff;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #b6c4d3;
+    }
+
+    .primary {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .primary:hover {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+    }
+
+    .sample {
+      color: var(--accent-strong);
+      background: var(--soft);
+      border-color: rgba(23, 111, 93, 0.2);
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .metric {
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .metric span {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(1.25rem, 2.4vw, 1.9rem);
+      line-height: 1.1;
+    }
+
+    .metric.highlight {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .metric.highlight span {
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .comment {
+      min-height: 116px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      background: #fff;
+    }
+
+    .comment.empty {
+      color: var(--muted);
+    }
+
+    .table {
+      display: grid;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .row:last-child {
+      border-bottom: 0;
+    }
+
+    .row span {
+      color: var(--muted);
+    }
+
+    .row strong {
+      text-align: right;
+    }
+
+    .notice {
+      padding: 12px 14px;
+      color: var(--warn);
+      background: var(--warm);
+      border: 1px solid rgba(138, 83, 25, 0.18);
+      border-radius: 8px;
+      line-height: 1.55;
+      font-size: 0.9rem;
+    }
+
+    .toast {
+      min-height: 22px;
+      color: var(--accent-strong);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        width: min(100% - 20px, 700px);
+        padding-top: 18px;
+      }
+
+      header,
+      .workspace {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        min-height: auto;
+      }
+
+      .grid,
+      .cards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>原価ざっくり計算ツール</h1>
+        <p class="lead">材料費、作業時間、手数料、利益率から、赤字になりにくい販売価格の目安を計算します。</p>
+      </div>
+      <div class="status" aria-live="polite">
+        <span>推奨価格</span>
+        <strong id="statusPrice">未計算</strong>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="原価計算ツール">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>入力</h2>
+          <button class="sample" type="button" id="sampleBtn" title="サンプル入力を入れる">サンプル</button>
+        </div>
+        <div class="panel-body">
+          <div class="grid">
+            <label>
+              商品・サービス名
+              <input id="itemName" placeholder="例: 焼き菓子セット">
+            </label>
+            <label>
+              現在の販売価格
+              <input id="currentPrice" inputmode="decimal" placeholder="例: 1200">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              材料費・仕入れ
+              <input id="materialCost" inputmode="decimal" placeholder="例: 420">
+            </label>
+            <label>
+              梱包・資材・送料
+              <input id="packingCost" inputmode="decimal" placeholder="例: 120">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              外注・その他費用
+              <input id="otherCost" inputmode="decimal" placeholder="例: 0">
+            </label>
+            <label>
+              販売手数料
+              <select id="feeRate">
+                <option value="0">なし</option>
+                <option value="3.6">3.6%</option>
+                <option value="5">5%</option>
+                <option value="10">10%</option>
+                <option value="custom">手入力</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid" id="customFeeWrap" hidden>
+            <label>
+              手数料率 %
+              <input id="customFeeRate" inputmode="decimal" placeholder="例: 8">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              作業時間 分
+              <input id="workMinutes" inputmode="decimal" placeholder="例: 45">
+            </label>
+            <label>
+              時給目安
+              <input id="hourlyRate" inputmode="decimal" placeholder="例: 1500">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              目標利益率
+              <select id="profitRate">
+                <option value="20">20%</option>
+                <option value="30" selected>30%</option>
+                <option value="40">40%</option>
+                <option value="50">50%</option>
+              </select>
+            </label>
+            <label>
+              丸め単位
+              <select id="roundUnit">
+                <option value="1">1円</option>
+                <option value="10">10円</option>
+                <option value="50">50円</option>
+                <option value="100" selected>100円</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="actions">
+            <button class="primary" type="button" id="calcBtn" title="価格を計算する">計算</button>
+            <button type="button" id="clearBtn" title="入力を消す">クリア</button>
+          </div>
+
+          <p class="notice">ざっくり見直すための補助ツールです。税金、在庫ロス、広告費、家賃などの固定費は必要に応じて「その他費用」に加えてください。</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>結果</h2>
+          <button type="button" id="copyBtn" title="結果をコピーする">コピー</button>
+        </div>
+        <div class="panel-body">
+          <div class="cards">
+            <div class="metric highlight">
+              <span>推奨価格</span>
+              <strong id="recommendedPrice">未計算</strong>
+            </div>
+            <div class="metric">
+              <span>赤字ライン</span>
+              <strong id="breakEvenPrice">未計算</strong>
+            </div>
+            <div class="metric">
+              <span>1個あたり利益</span>
+              <strong id="profitAmount">未計算</strong>
+            </div>
+            <div class="metric">
+              <span>利益率</span>
+              <strong id="actualRate">未計算</strong>
+            </div>
+          </div>
+
+          <div class="table" aria-label="計算内訳">
+            <div class="row"><span>商品・サービス</span><strong id="detailName">-</strong></div>
+            <div class="row"><span>直接原価</span><strong id="detailDirect">-</strong></div>
+            <div class="row"><span>作業コスト</span><strong id="detailLabor">-</strong></div>
+            <div class="row"><span>手数料率</span><strong id="detailFee">-</strong></div>
+            <div class="row"><span>現在価格との差</span><strong id="detailGap">-</strong></div>
+          </div>
+
+          <div class="comment empty" id="comment">左側に入力して「計算」を押してください。</div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const fields = {
+      itemName: document.querySelector("#itemName"),
+      currentPrice: document.querySelector("#currentPrice"),
+      materialCost: document.querySelector("#materialCost"),
+      packingCost: document.querySelector("#packingCost"),
+      otherCost: document.querySelector("#otherCost"),
+      feeRate: document.querySelector("#feeRate"),
+      customFeeRate: document.querySelector("#customFeeRate"),
+      workMinutes: document.querySelector("#workMinutes"),
+      hourlyRate: document.querySelector("#hourlyRate"),
+      profitRate: document.querySelector("#profitRate"),
+      roundUnit: document.querySelector("#roundUnit")
+    };
+
+    const output = {
+      statusPrice: document.querySelector("#statusPrice"),
+      recommendedPrice: document.querySelector("#recommendedPrice"),
+      breakEvenPrice: document.querySelector("#breakEvenPrice"),
+      profitAmount: document.querySelector("#profitAmount"),
+      actualRate: document.querySelector("#actualRate"),
+      detailName: document.querySelector("#detailName"),
+      detailDirect: document.querySelector("#detailDirect"),
+      detailLabor: document.querySelector("#detailLabor"),
+      detailFee: document.querySelector("#detailFee"),
+      detailGap: document.querySelector("#detailGap"),
+      comment: document.querySelector("#comment"),
+      toast: document.querySelector("#toast")
+    };
+
+    let lastSummary = "";
+
+    const sample = {
+      itemName: "焼き菓子セット",
+      currentPrice: "1200",
+      materialCost: "420",
+      packingCost: "120",
+      otherCost: "0",
+      feeRate: "10",
+      workMinutes: "45",
+      hourlyRate: "1500",
+      profitRate: "30",
+      roundUnit: "100"
+    };
+
+    function number(id) {
+      const raw = fields[id].value.replace(/,/g, "").trim();
+      const value = Number(raw);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function yen(value) {
+      return `${Math.round(value).toLocaleString("ja-JP")}円`;
+    }
+
+    function percent(value) {
+      return `${(Math.round(value * 10) / 10).toLocaleString("ja-JP")}%`;
+    }
+
+    function feeRate() {
+      if (fields.feeRate.value === "custom") return number("customFeeRate");
+      return Number(fields.feeRate.value);
+    }
+
+    function roundUp(value, unit) {
+      if (unit <= 1) return Math.ceil(value);
+      return Math.ceil(value / unit) * unit;
+    }
+
+    function calculate() {
+      const name = fields.itemName.value.trim() || "未入力";
+      const currentPrice = number("currentPrice");
+      const directCost = number("materialCost") + number("packingCost") + number("otherCost");
+      const laborCost = number("workMinutes") / 60 * number("hourlyRate");
+      const baseCost = directCost + laborCost;
+      const fee = feeRate() / 100;
+      const targetProfit = Number(fields.profitRate.value) / 100;
+      const unit = Number(fields.roundUnit.value);
+      const denominator = Math.max(0.01, 1 - fee - targetProfit);
+      const recommended = roundUp(baseCost / denominator, unit);
+      const breakEven = roundUp(baseCost / Math.max(0.01, 1 - fee), unit);
+      const feeAmount = recommended * fee;
+      const profit = recommended - baseCost - feeAmount;
+      const actualRate = recommended > 0 ? profit / recommended * 100 : 0;
+      const gap = currentPrice ? recommended - currentPrice : 0;
+
+      output.statusPrice.textContent = yen(recommended);
+      output.recommendedPrice.textContent = yen(recommended);
+      output.breakEvenPrice.textContent = yen(breakEven);
+      output.profitAmount.textContent = yen(profit);
+      output.actualRate.textContent = percent(actualRate);
+      output.detailName.textContent = name;
+      output.detailDirect.textContent = yen(directCost);
+      output.detailLabor.textContent = yen(laborCost);
+      output.detailFee.textContent = percent(fee * 100);
+      output.detailGap.textContent = currentPrice ? `${gap >= 0 ? "+" : ""}${yen(gap)}` : "-";
+
+      const lines = [];
+      if (!directCost && !laborCost) {
+        lines.push("まずは材料費や作業時間を入力すると、価格の目安が見えやすくなります。");
+      } else if (currentPrice && currentPrice < breakEven) {
+        lines.push("現在価格は、入力された条件では赤字ラインを下回っています。原価、作業時間、手数料のどれが大きいかを見直すと判断しやすくなります。");
+      } else if (currentPrice && currentPrice < recommended) {
+        lines.push("現在価格は赤字ラインは超えていますが、目標利益率には届いていません。価格改定、セット内容、作業時間の短縮を検討してもよさそうです。");
+      } else if (currentPrice) {
+        lines.push("現在価格は、入力された目標利益率をおおむね満たしています。次は固定費や広告費も含めて確認すると安心です。");
+      } else {
+        lines.push("推奨価格は、直接原価・作業時間・販売手数料・目標利益率をもとにした目安です。実際の販売価格は市場感やブランド価値も合わせて調整してください。");
+      }
+      lines.push(`推奨価格: ${yen(recommended)} / 赤字ライン: ${yen(breakEven)} / 1個あたり利益: ${yen(profit)}`);
+
+      lastSummary = [
+        `商品・サービス: ${name}`,
+        `推奨価格: ${yen(recommended)}`,
+        `赤字ライン: ${yen(breakEven)}`,
+        `直接原価: ${yen(directCost)}`,
+        `作業コスト: ${yen(laborCost)}`,
+        `手数料率: ${percent(fee * 100)}`,
+        `利益額: ${yen(profit)}`,
+        `利益率: ${percent(actualRate)}`,
+        currentPrice ? `現在価格との差: ${gap >= 0 ? "+" : ""}${yen(gap)}` : "現在価格との差: -"
+      ].join("\n");
+
+      output.comment.textContent = lines.join("\n\n");
+      output.comment.classList.remove("empty");
+      output.toast.textContent = "計算しました。";
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const helper = document.createElement("textarea");
+      helper.value = text;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.left = "-9999px";
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand("copy");
+      document.body.removeChild(helper);
+    }
+
+    document.querySelector("#calcBtn").addEventListener("click", calculate);
+    document.querySelector("#sampleBtn").addEventListener("click", () => {
+      Object.entries(sample).forEach(([key, value]) => {
+        fields[key].value = value;
+      });
+      document.querySelector("#customFeeWrap").hidden = true;
+      calculate();
+    });
+    document.querySelector("#clearBtn").addEventListener("click", () => {
+      Object.values(fields).forEach((field) => {
+        field.value = "";
+      });
+      fields.feeRate.value = "0";
+      fields.profitRate.value = "30";
+      fields.roundUnit.value = "100";
+      document.querySelector("#customFeeWrap").hidden = true;
+      lastSummary = "";
+      output.statusPrice.textContent = "未計算";
+      output.recommendedPrice.textContent = "未計算";
+      output.breakEvenPrice.textContent = "未計算";
+      output.profitAmount.textContent = "未計算";
+      output.actualRate.textContent = "未計算";
+      output.detailName.textContent = "-";
+      output.detailDirect.textContent = "-";
+      output.detailLabor.textContent = "-";
+      output.detailFee.textContent = "-";
+      output.detailGap.textContent = "-";
+      output.comment.textContent = "左側に入力して「計算」を押してください。";
+      output.comment.classList.add("empty");
+      output.toast.textContent = "";
+    });
+    document.querySelector("#copyBtn").addEventListener("click", async () => {
+      if (!lastSummary) {
+        output.toast.textContent = "コピーできる結果がまだありません。";
+        return;
+      }
+      try {
+        await copyText(lastSummary);
+        output.toast.textContent = "コピーしました。";
+      } catch (error) {
+        output.toast.textContent = "コピーできませんでした。手動で選択してください。";
+      }
+    });
+    fields.feeRate.addEventListener("change", () => {
+      document.querySelector("#customFeeWrap").hidden = fields.feeRate.value !== "custom";
+    });
+  </script>
+</body>
+</html>
