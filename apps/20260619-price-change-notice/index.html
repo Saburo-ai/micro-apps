@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>価格改定お知らせ文メーカー</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #667085;
+      --line: #d9e0e8;
+      --paper: #fbfcfd;
+      --panel: #ffffff;
+      --accent: #176f86;
+      --accent-strong: #105a70;
+      --soft: #edf7fa;
+      --warm: #f7efe0;
+      --warn: #8a5319;
+      --shadow: 0 18px 50px rgba(32, 33, 36, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(23, 111, 134, 0.08), rgba(207, 151, 52, 0.1)),
+        var(--paper);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea,
+    input,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.7rem, 3vw, 2.55rem);
+      line-height: 1.1;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      max-width: 750px;
+      line-height: 1.65;
+    }
+
+    .status {
+      display: grid;
+      gap: 4px;
+      min-width: 188px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .status span {
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .status strong {
+      font-size: 1.35rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      min-height: 720px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(237, 247, 250, 0.74);
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .panel-body {
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+      flex: 1;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label,
+    fieldset {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.35;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    legend {
+      padding: 0;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    input,
+    select {
+      min-height: 42px;
+      padding: 0 12px;
+    }
+
+    textarea {
+      min-height: 92px;
+      resize: vertical;
+      padding: 12px;
+      line-height: 1.65;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: 3px solid rgba(23, 111, 134, 0.16);
+      border-color: var(--accent);
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .check {
+      min-height: 42px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 9px 10px;
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .check input {
+      width: 18px;
+      min-height: 18px;
+      accent-color: var(--accent);
+    }
+
+    .actions,
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    button {
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      color: var(--ink);
+      background: #fff;
+      transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      border-color: #b6c4d3;
+    }
+
+    .primary {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .primary:hover {
+      background: var(--accent-strong);
+      border-color: var(--accent-strong);
+    }
+
+    .sample {
+      color: var(--accent-strong);
+      background: var(--soft);
+      border-color: rgba(23, 111, 134, 0.2);
+    }
+
+    .tab.active {
+      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .output {
+      min-height: 470px;
+      white-space: pre-wrap;
+      overflow: auto;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      line-height: 1.72;
+      background: #fff;
+    }
+
+    .empty {
+      color: var(--muted);
+    }
+
+    .notice {
+      padding: 12px 14px;
+      color: var(--warn);
+      background: var(--warm);
+      border: 1px solid rgba(138, 83, 25, 0.18);
+      border-radius: 8px;
+      line-height: 1.55;
+      font-size: 0.9rem;
+    }
+
+    .toast {
+      min-height: 22px;
+      color: var(--accent-strong);
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 900px) {
+      .app {
+        width: min(100% - 20px, 700px);
+        padding-top: 18px;
+      }
+
+      header,
+      .workspace {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        min-height: auto;
+      }
+
+      .grid,
+      .checks {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>価格改定お知らせ文メーカー</h1>
+        <p class="lead">値上げ理由、改定日、商品名を入れるだけで、お客様や取引先に伝える文章を整えます。</p>
+      </div>
+      <div class="status" aria-live="polite">
+        <span>生成タイプ</span>
+        <strong id="modeLabel">告知文</strong>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="価格改定お知らせ文作成ツール">
+      <div class="panel">
+        <div class="panel-header">
+          <h2>入力</h2>
+          <button class="sample" type="button" id="sampleBtn" title="サンプル入力を入れる">サンプル</button>
+        </div>
+        <div class="panel-body">
+          <div class="grid">
+            <label>
+              業種
+              <input id="business" placeholder="例: 焼き菓子店">
+            </label>
+            <label>
+              商品・サービス名
+              <input id="item" placeholder="例: 焼き菓子セット">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              改定前
+              <input id="oldPrice" placeholder="例: 1,200円">
+            </label>
+            <label>
+              改定後
+              <input id="newPrice" placeholder="例: 1,400円">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              改定開始日
+              <input id="startDate" placeholder="例: 2026年7月1日">
+            </label>
+            <label>
+              届け先
+              <select id="audience">
+                <option value="customer">お客様向け</option>
+                <option value="client">取引先向け</option>
+                <option value="member">会員・常連向け</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>
+              文体
+              <select id="tone">
+                <option value="polite">丁寧</option>
+                <option value="soft">やわらかめ</option>
+                <option value="formal">取引先向け</option>
+              </select>
+            </label>
+            <label>
+              主な掲載先
+              <select id="channel">
+                <option value="site">店頭・Webサイト</option>
+                <option value="mail">メール</option>
+                <option value="sns">SNS</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset>
+            <legend>価格改定の理由</legend>
+            <div class="checks">
+              <label class="check"><input type="checkbox" name="reason" value="原材料費の高騰">原材料費</label>
+              <label class="check"><input type="checkbox" name="reason" value="人件費の上昇">人件費</label>
+              <label class="check"><input type="checkbox" name="reason" value="物流費や包装資材費の上昇">送料・資材</label>
+              <label class="check"><input type="checkbox" name="reason" value="サービス品質の維持と向上">品質維持</label>
+            </div>
+          </fieldset>
+
+          <label>
+            補足したいこと
+            <textarea id="note" placeholder="例: これまで価格維持に努めてきたこと、今後も品質を守りたいこと"></textarea>
+          </label>
+
+          <div class="actions">
+            <button class="primary" type="button" id="generateBtn" title="文章を生成する">生成</button>
+            <button type="button" id="clearBtn" title="入力を消す">クリア</button>
+          </div>
+
+          <p class="notice">文章作成の補助ツールです。法務・税務・契約上の判断が必要な場合は、専門家や関係機関に確認してください。</p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <h2>出力</h2>
+          <button type="button" id="copyBtn" title="文章をコピーする">コピー</button>
+        </div>
+        <div class="panel-body">
+          <div class="tabs" aria-label="出力形式">
+            <button class="tab active" type="button" data-mode="notice">告知文</button>
+            <button class="tab" type="button" data-mode="email">メール</button>
+            <button class="tab" type="button" data-mode="sns">SNS</button>
+          </div>
+          <div class="output empty" id="output">左側に入力して「生成」を押してください。</div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const fields = {
+      business: document.querySelector("#business"),
+      item: document.querySelector("#item"),
+      oldPrice: document.querySelector("#oldPrice"),
+      newPrice: document.querySelector("#newPrice"),
+      startDate: document.querySelector("#startDate"),
+      audience: document.querySelector("#audience"),
+      tone: document.querySelector("#tone"),
+      channel: document.querySelector("#channel"),
+      note: document.querySelector("#note")
+    };
+    const output = document.querySelector("#output");
+    const toast = document.querySelector("#toast");
+    const modeLabel = document.querySelector("#modeLabel");
+    let currentMode = "notice";
+    let generated = {};
+
+    const labels = {
+      notice: "告知文",
+      email: "メール",
+      sns: "SNS"
+    };
+
+    const sample = {
+      business: "焼き菓子店",
+      item: "焼き菓子セット",
+      oldPrice: "1,200円",
+      newPrice: "1,400円",
+      startDate: "2026年7月1日",
+      audience: "customer",
+      tone: "soft",
+      channel: "site",
+      note: "これまで価格維持に努めてきましたが、品質を守りながら提供を続けるため改定します。"
+    };
+
+    function value(id, fallback) {
+      const text = fields[id].value.trim();
+      return text || fallback;
+    }
+
+    function selectedReasons() {
+      const values = [...document.querySelectorAll("input[name='reason']:checked")].map((input) => input.value);
+      return values.length ? values : ["仕入れ・運営コストの上昇"];
+    }
+
+    function audienceName() {
+      return {
+        customer: "お客様",
+        client: "お取引先各位",
+        member: "会員・常連のお客様"
+      }[fields.audience.value];
+    }
+
+    function apology() {
+      if (fields.tone.value === "soft") return "心苦しいお願いとなりますが";
+      if (fields.tone.value === "formal") return "誠に恐縮ではございますが";
+      return "大変恐縮ではございますが";
+    }
+
+    function appreciation() {
+      if (fields.tone.value === "soft") return "いつもご利用いただき、ありがとうございます。";
+      if (fields.tone.value === "formal") return "平素より格別のお引き立てを賜り、厚く御礼申し上げます。";
+      return "いつもご愛顧いただき、誠にありがとうございます。";
+    }
+
+    function reasonSentence() {
+      const reasons = selectedReasons();
+      if (reasons.length === 1) return `${reasons[0]}の影響を受け`;
+      const last = reasons.pop();
+      return `${reasons.join("、")}、および${last}の影響を受け`;
+    }
+
+    function priceLine() {
+      const oldPrice = value("oldPrice", "");
+      const newPrice = value("newPrice", "");
+      if (oldPrice && newPrice) return `改定前: ${oldPrice}\n改定後: ${newPrice}`;
+      if (newPrice) return `改定後価格: ${newPrice}`;
+      return "改定後価格: 詳細は別途ご案内いたします。";
+    }
+
+    function noteLine() {
+      const note = fields.note.value.trim();
+      return note ? `\n\n${note}` : "";
+    }
+
+    function buildNotice() {
+      const item = value("item", "対象商品・サービス");
+      const startDate = value("startDate", "改定開始日");
+      return `${audienceName()}へ\n\n${appreciation()}\n\nこのたび、${reasonSentence()}、${item}の価格を改定させていただくこととなりました。\n\n${priceLine()}\n改定日: ${startDate}${noteLine()}\n\n${apology()}、今後も品質とサービスの向上に努めてまいります。何卒ご理解賜りますようお願い申し上げます。`;
+    }
+
+    function buildEmail() {
+      const item = value("item", "対象商品・サービス");
+      const startDate = value("startDate", "改定開始日");
+      const business = value("business", "当店");
+      const greeting = fields.audience.value === "client" ? "お取引先各位" : audienceName();
+      return `件名: ${item} 価格改定のお知らせ\n\n${greeting}\n\n${appreciation()}\n${business}です。\n\nこのたび、${reasonSentence()}、${item}の価格を下記の通り改定させていただきます。\n\n${priceLine()}\n改定日: ${startDate}${noteLine()}\n\n${apology()}、今後もよりよい商品・サービスをお届けできるよう努めてまいります。\n何卒ご理解賜りますようお願い申し上げます。`;
+    }
+
+    function buildSns() {
+      const item = value("item", "商品・サービス");
+      const startDate = value("startDate", "改定日");
+      const newPrice = value("newPrice", "");
+      const price = newPrice ? `新価格は${newPrice}です。` : "詳細は店頭・Webサイトにてご案内します。";
+      return `【価格改定のお知らせ】\n\nいつもご利用ありがとうございます。\n${reasonSentence()}、${startDate}より${item}の価格を改定いたします。\n\n${price}\n\n${apology()}、今後も品質を大切にお届けしてまいります。`;
+    }
+
+    function render() {
+      generated = {
+        notice: buildNotice(),
+        email: buildEmail(),
+        sns: buildSns()
+      };
+      output.textContent = generated[currentMode];
+      output.classList.remove("empty");
+      toast.textContent = `${labels[currentMode]}を生成しました。`;
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const helper = document.createElement("textarea");
+      helper.value = text;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.left = "-9999px";
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand("copy");
+      document.body.removeChild(helper);
+    }
+
+    document.querySelector("#generateBtn").addEventListener("click", render);
+    document.querySelector("#sampleBtn").addEventListener("click", () => {
+      Object.entries(sample).forEach(([key, text]) => {
+        fields[key].value = text;
+      });
+      document.querySelectorAll("input[name='reason']").forEach((input) => {
+        input.checked = ["原材料費の高騰", "物流費や包装資材費の上昇", "サービス品質の維持と向上"].includes(input.value);
+      });
+      render();
+    });
+    document.querySelector("#clearBtn").addEventListener("click", () => {
+      Object.values(fields).forEach((field) => {
+        field.value = "";
+      });
+      fields.audience.value = "customer";
+      fields.tone.value = "polite";
+      fields.channel.value = "site";
+      document.querySelectorAll("input[name='reason']").forEach((input) => {
+        input.checked = false;
+      });
+      generated = {};
+      output.textContent = "左側に入力して「生成」を押してください。";
+      output.classList.add("empty");
+      toast.textContent = "";
+    });
+    document.querySelector("#copyBtn").addEventListener("click", async () => {
+      const text = output.textContent.trim();
+      if (!text || output.classList.contains("empty")) {
+        toast.textContent = "コピーできる文章がまだありません。";
+        return;
+      }
+      try {
+        await copyText(text);
+        toast.textContent = "コピーしました。";
+      } catch (error) {
+        toast.textContent = "コピーできませんでした。手動で選択してください。";
+      }
+    });
+    document.querySelectorAll(".tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        currentMode = button.dataset.mode;
+        modeLabel.textContent = labels[currentMode];
+        document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+        if (generated[currentMode]) {
+          output.textContent = generated[currentMode];
+          output.classList.remove("empty");
+          toast.textContent = `${labels[currentMode]}を表示しています。`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>
