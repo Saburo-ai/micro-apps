@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>問い合わせ返信下書きメーカー</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #202124;
+      --muted: #667085;
+      --line: #d9e0e8;
+      --paper: #fbfcfd;
+      --panel: #ffffff;
+      --accent: #7a4f18;
+      --accent-strong: #5d3d14;
+      --soft: #fbf2e4;
+      --cool: #eef6f7;
+      --shadow: 0 18px 50px rgba(32, 33, 36, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(122, 79, 24, 0.08), rgba(36, 122, 132, 0.09)),
+        var(--paper);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    .app {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.7rem, 3vw, 2.55rem);
+      line-height: 1.1;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      max-width: 780px;
+      line-height: 1.65;
+    }
+
+    .status {
+      display: grid;
+      gap: 4px;
+      min-width: 188px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .status span {
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .status strong {
+      font-size: 1.55rem;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(300px, 0.92fr) minmax(340px, 1.08fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251, 252, 253, 0.88);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .panel-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    .form {
+      display: grid;
+      gap: 14px;
+      padding: 18px;
+    }
+
+    .row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .two {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    label {
+      color: #344054;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 11px;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 98px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(122, 79, 24, 0.58);
+      box-shadow: 0 0 0 3px rgba(122, 79, 24, 0.12);
+    }
+
+    .checks {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .check {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      min-height: 42px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: #344054;
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .check input {
+      width: auto;
+      margin-top: 2px;
+      accent-color: var(--accent);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+      padding: 10px 14px;
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    button:hover {
+      border-color: rgba(122, 79, 24, 0.42);
+    }
+
+    .primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .sample {
+      background: var(--soft);
+      color: var(--accent-strong);
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab {
+      padding: 8px 10px;
+      font-size: 0.88rem;
+      background: #fff;
+    }
+
+    .tab.active {
+      border-color: var(--accent);
+      background: var(--soft);
+      color: var(--accent-strong);
+    }
+
+    .output-wrap {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .metric {
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--cool);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 1.1rem;
+    }
+
+    .output {
+      min-height: 390px;
+      white-space: pre-wrap;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 16px;
+      line-height: 1.68;
+      font-size: 0.96rem;
+    }
+
+    .output.empty {
+      color: var(--muted);
+    }
+
+    .hint {
+      display: grid;
+      gap: 7px;
+      padding: 12px;
+      border: 1px solid #ead7ba;
+      border-radius: 8px;
+      background: var(--soft);
+      color: #6b4a1d;
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .hint strong {
+      color: var(--accent-strong);
+    }
+
+    .toast {
+      min-height: 22px;
+      color: var(--accent-strong);
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 860px) {
+      header,
+      .workspace,
+      .two {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        display: grid;
+        align-items: start;
+      }
+
+      .status {
+        min-width: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        width: min(100% - 22px, 1180px);
+        padding-top: 18px;
+      }
+
+      .checks,
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head {
+        display: grid;
+      }
+
+      .output {
+        min-height: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>問い合わせ返信下書きメーカー</h1>
+        <p class="lead">問い合わせ内容と対応状況を選ぶと、メールやDMに貼り付けやすい返信文を作ります。</p>
+      </div>
+      <div class="status" aria-label="生成結果">
+        <span>現在の出力</span>
+        <strong id="modeLabel">返信メール</strong>
+      </div>
+    </header>
+
+    <section class="workspace" aria-label="問い合わせ返信作成ツール">
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>入力</h2>
+            <p>分かる範囲だけで大丈夫です。</p>
+          </div>
+          <button class="sample" type="button" id="sampleBtn" title="サンプル入力を入れる">サンプル</button>
+        </div>
+
+        <div class="form">
+          <div class="two">
+            <div class="row">
+              <label for="business">事業名・店名</label>
+              <input id="business" placeholder="例: さくら焼き菓子店">
+            </div>
+            <div class="row">
+              <label for="customer">宛名</label>
+              <input id="customer" placeholder="例: 田中様">
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="row">
+              <label for="category">問い合わせ種別</label>
+              <select id="category">
+                <option value="stock">在庫・入荷</option>
+                <option value="reservation">予約・日程</option>
+                <option value="price">料金・見積もり</option>
+                <option value="shipping">配送・納期</option>
+                <option value="change">変更・キャンセル</option>
+                <option value="complaint">不満・トラブル</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div class="row">
+              <label for="status">回答状況</label>
+              <select id="status">
+                <option value="answer">回答できる</option>
+                <option value="checking">確認してから返す</option>
+                <option value="unavailable">対応できない</option>
+                <option value="partial">一部だけ対応できる</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="two">
+            <div class="row">
+              <label for="tone">トーン</label>
+              <select id="tone">
+                <option value="polite">丁寧</option>
+                <option value="friendly">やわらかい</option>
+                <option value="formal">かしこまった</option>
+              </select>
+            </div>
+            <div class="row">
+              <label for="channel">返信先</label>
+              <select id="channel">
+                <option value="email">メール</option>
+                <option value="dm">SNS・チャット</option>
+                <option value="form">問い合わせフォーム</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="row">
+            <label for="inquiry">問い合わせ内容</label>
+            <textarea id="inquiry" placeholder="例: 焼き菓子セットを週末に受け取れるか、在庫と予約方法を知りたい。"></textarea>
+          </div>
+
+          <div class="row">
+            <label for="answer">伝えたい回答・対応内容</label>
+            <textarea id="answer" placeholder="例: 今週土曜の受け取りなら3セットまで用意可能。前日18時までに予約が必要。"></textarea>
+          </div>
+
+          <div class="two">
+            <div class="row">
+              <label for="nextAction">次にお願いしたいこと</label>
+              <input id="nextAction" placeholder="例: 希望日時と個数をご返信ください">
+            </div>
+            <div class="row">
+              <label for="replyBy">返信・確認の目安</label>
+              <input id="replyBy" placeholder="例: 本日18時まで / 2営業日以内">
+            </div>
+          </div>
+
+          <div class="row">
+            <label>入れたい要素</label>
+            <div class="checks">
+              <label class="check"><input type="checkbox" id="thanks" checked>問い合わせへのお礼</label>
+              <label class="check"><input type="checkbox" id="apology">返信遅れ・不便へのお詫び</label>
+              <label class="check"><input type="checkbox" id="confirm">内容確認の一文</label>
+              <label class="check"><input type="checkbox" id="closing" checked>追加質問の案内</label>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" type="button" id="generateBtn" title="返信文を生成する">生成</button>
+            <button type="button" id="clearBtn" title="入力を消す">クリア</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>出力</h2>
+            <p id="outputNote">返信メールを表示しています。</p>
+          </div>
+          <div class="tabs" aria-label="出力切り替え">
+            <button class="tab active" type="button" data-mode="email">メール</button>
+            <button class="tab" type="button" data-mode="short">短文</button>
+            <button class="tab" type="button" data-mode="memo">確認メモ</button>
+          </div>
+        </div>
+
+        <div class="output-wrap">
+          <div class="metrics">
+            <div class="metric"><span>文面</span><strong id="kindMetric">メール</strong></div>
+            <div class="metric"><span>目安文字数</span><strong id="charMetric">0</strong></div>
+            <div class="metric"><span>対応状況</span><strong id="statusMetric">未生成</strong></div>
+          </div>
+          <div class="output empty" id="output">左側に入力して「生成」を押してください。</div>
+          <div class="hint">
+            <strong>確認してから送信</strong>
+            <span>事実関係、金額、納期、謝罪や補償の表現は、送信前に必ず自分で確認してください。</span>
+          </div>
+          <div class="actions">
+            <button type="button" id="copyBtn" title="文章をコピーする">コピー</button>
+          </div>
+          <div class="toast" id="toast" role="status" aria-live="polite"></div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const fields = {
+      business: document.querySelector("#business"),
+      customer: document.querySelector("#customer"),
+      category: document.querySelector("#category"),
+      status: document.querySelector("#status"),
+      tone: document.querySelector("#tone"),
+      channel: document.querySelector("#channel"),
+      inquiry: document.querySelector("#inquiry"),
+      answer: document.querySelector("#answer"),
+      nextAction: document.querySelector("#nextAction"),
+      replyBy: document.querySelector("#replyBy"),
+      thanks: document.querySelector("#thanks"),
+      apology: document.querySelector("#apology"),
+      confirm: document.querySelector("#confirm"),
+      closing: document.querySelector("#closing")
+    };
+
+    const output = document.querySelector("#output");
+    const toast = document.querySelector("#toast");
+    const modeLabel = document.querySelector("#modeLabel");
+    const outputNote = document.querySelector("#outputNote");
+    const kindMetric = document.querySelector("#kindMetric");
+    const charMetric = document.querySelector("#charMetric");
+    const statusMetric = document.querySelector("#statusMetric");
+    let currentMode = "email";
+    let generated = {};
+
+    const labels = {
+      email: "返信メール",
+      short: "短文DM",
+      memo: "確認メモ"
+    };
+
+    const categoryLabels = {
+      stock: "在庫・入荷",
+      reservation: "予約・日程",
+      price: "料金・見積もり",
+      shipping: "配送・納期",
+      change: "変更・キャンセル",
+      complaint: "不満・トラブル",
+      other: "お問い合わせ"
+    };
+
+    const statusLabels = {
+      answer: "回答可",
+      checking: "確認中",
+      unavailable: "対応不可",
+      partial: "一部対応"
+    };
+
+    const sample = {
+      business: "さくら焼き菓子店",
+      customer: "田中様",
+      category: "stock",
+      status: "answer",
+      tone: "friendly",
+      channel: "dm",
+      inquiry: "焼き菓子セットを週末に受け取れるか、在庫と予約方法を知りたい。",
+      answer: "今週土曜の受け取りであれば3セットまでご用意できます。ご予約は前日18時までにお願いします。",
+      nextAction: "ご希望の受け取り時間と個数をご返信ください",
+      replyBy: "本日18時まで",
+      thanks: true,
+      apology: false,
+      confirm: true,
+      closing: true
+    };
+
+    function value(id, fallback) {
+      const text = fields[id].value.trim();
+      return text || fallback;
+    }
+
+    function greeting() {
+      const customer = value("customer", "");
+      if (customer) return customer;
+      return fields.tone.value === "formal" ? "お客様" : "お問い合わせいただいたお客様";
+    }
+
+    function businessLine() {
+      const business = value("business", "");
+      return business ? `${business}です。` : "";
+    }
+
+    function thanksLine() {
+      if (!fields.thanks.checked) return "";
+      if (fields.tone.value === "formal") return "このたびはお問い合わせいただき、誠にありがとうございます。";
+      if (fields.tone.value === "friendly") return "お問い合わせありがとうございます。";
+      return "お問い合わせいただき、ありがとうございます。";
+    }
+
+    function apologyLine() {
+      if (!fields.apology.checked && fields.category.value !== "complaint") return "";
+      if (fields.tone.value === "formal") return "ご不便をおかけしておりますこと、心よりお詫び申し上げます。";
+      return "ご不便をおかけして申し訳ございません。";
+    }
+
+    function confirmLine() {
+      if (!fields.confirm.checked) return "";
+      const category = categoryLabels[fields.category.value];
+      const inquiry = value("inquiry", "");
+      if (inquiry) return `${category}について、以下の内容でお問い合わせを確認しました。\n「${inquiry}」`;
+      return `${category}についてのお問い合わせとして確認しました。`;
+    }
+
+    function answerLead() {
+      if (fields.status.value === "checking") return "内容を確認のうえ、あらためてご連絡いたします。";
+      if (fields.status.value === "unavailable") return "恐れ入りますが、今回はご希望に沿うことができません。";
+      if (fields.status.value === "partial") return "一部対応できる内容がございますので、下記の通りご案内いたします。";
+      return "お問い合わせの件について、下記の通りご案内いたします。";
+    }
+
+    function answerBody() {
+      const answer = value("answer", "");
+      if (answer) return answer;
+      if (fields.status.value === "checking") return "確認が必要なため、詳細が分かり次第ご返信いたします。";
+      if (fields.status.value === "unavailable") return "現在の状況では対応が難しいため、ご了承いただけますと幸いです。";
+      return "詳細を確認し、必要な情報を整理してご案内いたします。";
+    }
+
+    function nextLine() {
+      const action = value("nextAction", "");
+      const replyBy = value("replyBy", "");
+      if (action && replyBy) return `お手数ですが、${replyBy}に${action}。`;
+      if (action) return `お手数ですが、${action}。`;
+      if (replyBy) return `${replyBy}を目安にご連絡いたします。`;
+      if (fields.status.value === "checking") return "確認が取れ次第、こちらからご連絡いたします。";
+      return "";
+    }
+
+    function closingLine() {
+      if (!fields.closing.checked) return "";
+      if (fields.tone.value === "friendly") return "ほかにも気になる点がありましたら、お気軽にご連絡ください。";
+      return "ご不明点がございましたら、お気軽にお知らせください。";
+    }
+
+    function signLine() {
+      const business = value("business", "");
+      return business ? `\n\n${business}` : "";
+    }
+
+    function compact(lines) {
+      return lines.filter(Boolean).join("\n\n");
+    }
+
+    function buildEmail() {
+      const subject = `件名: ${categoryLabels[fields.category.value]}についてのご返信`;
+      return compact([
+        subject,
+        greeting(),
+        thanksLine(),
+        businessLine(),
+        apologyLine(),
+        confirmLine(),
+        answerLead(),
+        answerBody(),
+        nextLine(),
+        closingLine()
+      ]) + signLine();
+    }
+
+    function buildShort() {
+      const parts = [
+        greeting(),
+        thanksLine(),
+        apologyLine(),
+        answerBody(),
+        nextLine(),
+        closingLine()
+      ];
+      return compact(parts);
+    }
+
+    function buildMemo() {
+      const lines = [
+        "# 問い合わせ返信前チェック",
+        "",
+        `- 種別: ${categoryLabels[fields.category.value]}`,
+        `- 対応状況: ${statusLabels[fields.status.value]}`,
+        `- 返信先: ${fields.channel.options[fields.channel.selectedIndex].text}`,
+        `- トーン: ${fields.tone.options[fields.tone.selectedIndex].text}`,
+        `- 宛名: ${value("customer", "未入力")}`,
+        `- 事業名: ${value("business", "未入力")}`,
+        "",
+        "## 確認すること",
+        "- 金額、日付、在庫、納期に誤りがないか",
+        "- 対応できない場合の代替案が必要か",
+        "- クレームや補償に関わる表現を強く言い切っていないか",
+        "- 送信先と宛名が合っているか"
+      ];
+      const inquiry = value("inquiry", "");
+      const answer = value("answer", "");
+      if (inquiry) lines.push("", "## 問い合わせ内容", inquiry);
+      if (answer) lines.push("", "## 回答案", answer);
+      return lines.join("\n");
+    }
+
+    function renderMode() {
+      const text = generated[currentMode] || "";
+      output.textContent = text || "左側に入力して「生成」を押してください。";
+      output.classList.toggle("empty", !text);
+      modeLabel.textContent = labels[currentMode];
+      outputNote.textContent = `${labels[currentMode]}を表示しています。`;
+      kindMetric.textContent = currentMode === "email" ? "メール" : currentMode === "short" ? "短文" : "メモ";
+      charMetric.textContent = text ? String(text.length) : "0";
+      statusMetric.textContent = generated.email ? statusLabels[fields.status.value] : "未生成";
+    }
+
+    function render() {
+      generated = {
+        email: buildEmail(),
+        short: buildShort(),
+        memo: buildMemo()
+      };
+      renderMode();
+      toast.textContent = `${labels[currentMode]}を生成しました。`;
+    }
+
+    async function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const helper = document.createElement("textarea");
+      helper.value = text;
+      helper.setAttribute("readonly", "");
+      helper.style.position = "fixed";
+      helper.style.left = "-9999px";
+      document.body.appendChild(helper);
+      helper.select();
+      document.execCommand("copy");
+      document.body.removeChild(helper);
+    }
+
+    document.querySelector("#generateBtn").addEventListener("click", render);
+    document.querySelector("#sampleBtn").addEventListener("click", () => {
+      Object.entries(sample).forEach(([key, val]) => {
+        if (fields[key].type === "checkbox") {
+          fields[key].checked = val;
+        } else {
+          fields[key].value = val;
+        }
+      });
+      render();
+    });
+    document.querySelector("#clearBtn").addEventListener("click", () => {
+      Object.entries(fields).forEach(([key, field]) => {
+        if (field.type === "checkbox") {
+          field.checked = key === "thanks" || key === "closing";
+        } else {
+          field.value = "";
+        }
+      });
+      fields.category.value = "stock";
+      fields.status.value = "answer";
+      fields.tone.value = "polite";
+      fields.channel.value = "email";
+      generated = {};
+      renderMode();
+      toast.textContent = "";
+    });
+    document.querySelector("#copyBtn").addEventListener("click", async () => {
+      const text = generated[currentMode] || "";
+      if (!text) {
+        toast.textContent = "コピーできる文章がまだありません。";
+        return;
+      }
+      try {
+        await copyText(text);
+        toast.textContent = "コピーしました。";
+      } catch (error) {
+        toast.textContent = "コピーできませんでした。手動で選択してください。";
+      }
+    });
+    document.querySelectorAll(".tab").forEach((button) => {
+      button.addEventListener("click", () => {
+        currentMode = button.dataset.mode;
+        document.querySelectorAll(".tab").forEach((tab) => tab.classList.toggle("active", tab === button));
+        renderMode();
+      });
+    });
+  </script>
+</body>
+</html>
